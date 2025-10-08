@@ -231,7 +231,7 @@ if uploaded_file is not None:
             st.subheader("5. Nhận xét Tình hình Tài chính (AI) - Tự động")
             
             if st.button("Yêu cầu AI Phân tích Tự động"):
-                api_key = st.secrets.get("GEMINI_API_KEY")  
+                api_key = st.secrets.get("GEMINI_API_KEY="AIzaSyD_4ZhOboOeWcuMUGqguZqBBSZgCJBkfhs"")  
                 
                 if api_key:
                     with st.spinner('Đang gửi dữ liệu và chờ Gemini phân tích...'):
