@@ -24,7 +24,8 @@ def process_financial_data(df):
     # Đảm bảo các giá trị là số để tính toán
     numeric_cols = ['Năm trước', 'Năm sau']
     for col in numeric_cols:
-        df[col] = pd.to_numeric(col, errors='coerce').fillna(0)
+        # SỬA LỖI: Cần truyền df[col] (Series) vào pd.to_numeric thay vì col (string)
+        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
     
     # 1. Tính Tốc độ Tăng trưởng
     # Dùng .replace(0, 1e-9) cho Series Pandas để tránh lỗi chia cho 0
@@ -105,8 +106,6 @@ def handle_chat_query(prompt, data_for_ai_context, api_key):
             for msg in recent_messages
         ] + [user_message_part]
         
-        # Sửa lỗi: API cần contents là list of Parts/Content, không phải list of dicts.
-        
         client = genai.Client(api_key=api_key)
         model_name = 'gemini-2.5-flash'
 
@@ -119,7 +118,7 @@ def handle_chat_query(prompt, data_for_ai_context, api_key):
         
         ai_response = response.text
         
-        # Thêm phản hồi của AI vào lịch sử session state (LƯU Ý: tin nhắn người dùng đã được thêm ở ngoài)
+        # Thêm phản hồi của AI vào lịch sử session state
         st.session_state.messages.append({"role": "assistant", "content": ai_response})
         return ai_response
 
@@ -227,7 +226,9 @@ if uploaded_file is not None:
                 ],
                 'Giá trị': [
                     df_processed.to_markdown(index=False),
-                    f"{df_processed[df_processed['Chỉ tiêu'].str.contains('TÀI SẢN NGẮN HẠN', case=False, na=False)]['Tốc độ tăng trưởng (%)'].iloc[0]:.2f}%",  
+                    # Đảm bảo chỉ số Tăng trưởng Tài sản ngắn hạn tồn tại trước khi truy cập
+                    f"{df_processed[df_processed['Chỉ tiêu'].str.contains('TÀI SẢN NGẮN HẠN', case=False, na=False)]['Tốc độ tăng trưởng (%)'].iloc[0]:.2f}%" 
+                        if not df_processed[df_processed['Chỉ tiêu'].str.contains('TÀI SẢN NGẮN HẠN', case=False, na=False)].empty else "N/A",  
                     f"{thanh_toan_hien_hanh_N_1}",  
                     f"{thanh_toan_hien_hanh_N}"
                 ]
@@ -257,7 +258,6 @@ if uploaded_file is not None:
                     st.markdown(message["content"])
 
             # Xử lý input mới
-            # Tên biến st.chat_input phải khác tên biến "prompt" trong handle_chat_query để tránh xung đột
             chat_input_key = "chat_query_input"
             user_prompt = st.chat_input("Hỏi Gemini AI về báo cáo tài chính...", key=chat_input_key)
             
@@ -272,12 +272,9 @@ if uploaded_file is not None:
                     
                     # Gọi hàm xử lý chat
                     with st.spinner('Gemini đang phân tích và trả lời...'):
-                        # Gọi hàm và để Streamlit tự động render lại sau khi session state được cập nhật
-                        # Cần gọi st.rerun() để hiển thị ngay cả tin nhắn người dùng và spinner
                         handle_chat_query(user_prompt, data_for_ai_context, api_key)
                         
                         # Bắt buộc gọi rerun để Streamlit hiển thị tin nhắn mới nhất
-                        # (bao gồm tin nhắn người dùng và phản hồi của AI)
                         st.rerun() 
 
     except ValueError as ve:
