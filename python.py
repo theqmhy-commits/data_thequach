@@ -10,7 +10,7 @@ st.set_page_config(
 )
 
 # --- PHẦN ĐÃ CHỈNH SỬA: Đổi màu chữ sang ĐỎ bằng st.markdown và HTML ---
-st.markdown("## Ứng dụng <span style='color:red;'>Phân Tích Báo Cáo Tài Chính</span> 📊", unsafe_allow_html=True)
+st.markdown("## <span style='color:red;'>Ứng dụng Phân Tích Báo Cáo Tài Chính</span> 📊", unsafe_allow_html=True)
 # st.title("Ứng dụng Phân Tích Báo Cáo Tài Chính 📊") # Dòng cũ đã được thay thế
 
 # --- Hàm tính toán chính (Sử dụng Caching để Tối ưu hiệu suất) ---
@@ -21,7 +21,7 @@ def process_financial_data(df):
     # Đảm bảo các giá trị là số để tính toán
     numeric_cols = ['Năm trước', 'Năm sau']
     for col in numeric_cols:
-        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        df[col] = pd.to_numeric(col, errors='coerce').fillna(0)
     
     # 1. Tính Tốc độ Tăng trưởng
     # Dùng .replace(0, 1e-9) cho Series Pandas để tránh lỗi chia cho 0
