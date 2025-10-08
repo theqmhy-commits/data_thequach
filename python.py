@@ -24,7 +24,7 @@ def process_financial_data(df):
     # Đảm bảo các giá trị là số để tính toán
     numeric_cols = ['Năm trước', 'Năm sau']
     for col in numeric_cols:
-        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        df[col] = pd.to_numeric(col, errors='coerce').fillna(0)
     
     # 1. Tính Tốc độ Tăng trưởng
     # Dùng .replace(0, 1e-9) cho Series Pandas để tránh lỗi chia cho 0
@@ -83,9 +83,6 @@ def get_ai_analysis(data_for_ai, api_key):
 def handle_chat_query(prompt, data_for_ai_context, api_key):
     """Xử lý câu hỏi chat, duy trì lịch sử và ngữ cảnh dữ liệu."""
     try:
-        # Cập nhật lịch sử chat với câu hỏi mới
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        
         # Tạo prompt đầy đủ, bao gồm ngữ cảnh dữ liệu để AI luôn có thông tin
         system_instruction = f"""
         Bạn là một chuyên gia phân tích tài chính chuyên nghiệp. Hãy trả lời câu hỏi của người dùng dựa trên ngữ cảnh dữ liệu tài chính sau:
@@ -98,10 +95,17 @@ def handle_chat_query(prompt, data_for_ai_context, api_key):
         # Chuyển đổi lịch sử st.session_state sang định dạng API
         # Lấy lịch sử chỉ 5 tin nhắn gần nhất để tránh vượt giới hạn token
         recent_messages = st.session_state.messages[-5:]
-        history_for_api = [
+        
+        # Lấy tin nhắn người dùng vừa gửi để thêm vào list contents
+        user_message_part = {"role": "user", "parts": [{"text": prompt}]}
+        
+        # Lịch sử + tin nhắn mới nhất
+        contents = [
             {"role": msg["role"], "parts": [{"text": msg["content"]}]}
             for msg in recent_messages
-        ]
+        ] + [user_message_part]
+        
+        # Sửa lỗi: API cần contents là list of Parts/Content, không phải list of dicts.
         
         client = genai.Client(api_key=api_key)
         model_name = 'gemini-2.5-flash'
@@ -109,15 +113,14 @@ def handle_chat_query(prompt, data_for_ai_context, api_key):
         # Gọi API với lịch sử và system instruction
         response = client.models.generate_content(
             model=model_name,
-            contents=history_for_api,
+            contents=contents,
             system_instruction=system_instruction
         )
         
         ai_response = response.text
         
-        # Thêm phản hồi của AI vào lịch sử session state
+        # Thêm phản hồi của AI vào lịch sử session state (LƯU Ý: tin nhắn người dùng đã được thêm ở ngoài)
         st.session_state.messages.append({"role": "assistant", "content": ai_response})
-        # **KHÔNG CẦN TRẢ VỀ** vì Session State đã được cập nhật
         return ai_response
 
     except APIError as e:
@@ -254,20 +257,28 @@ if uploaded_file is not None:
                     st.markdown(message["content"])
 
             # Xử lý input mới
-            prompt = st.chat_input("Hỏi Gemini AI về báo cáo tài chính...")
+            # Tên biến st.chat_input phải khác tên biến "prompt" trong handle_chat_query để tránh xung đột
+            chat_input_key = "chat_query_input"
+            user_prompt = st.chat_input("Hỏi Gemini AI về báo cáo tài chính...", key=chat_input_key)
             
-            if prompt:
+            if user_prompt:
                 api_key = st.secrets.get("GEMINI_API_KEY")
                 
                 if not api_key:
                     st.error("Lỗi: Không tìm thấy Khóa API 'GEMINI_API_KEY'. Không thể chat.")
                 else:
+                    # Thêm tin nhắn của người dùng ngay lập tức
+                    st.session_state.messages.append({"role": "user", "content": user_prompt})
+                    
                     # Gọi hàm xử lý chat
                     with st.spinner('Gemini đang phân tích và trả lời...'):
                         # Gọi hàm và để Streamlit tự động render lại sau khi session state được cập nhật
-                        handle_chat_query(prompt, data_for_ai_context, api_key)
+                        # Cần gọi st.rerun() để hiển thị ngay cả tin nhắn người dùng và spinner
+                        handle_chat_query(user_prompt, data_for_ai_context, api_key)
                         
-                        # Không cần gọi st.rerun() ở đây
+                        # Bắt buộc gọi rerun để Streamlit hiển thị tin nhắn mới nhất
+                        # (bao gồm tin nhắn người dùng và phản hồi của AI)
+                        st.rerun() 
 
     except ValueError as ve:
         st.error(f"Lỗi cấu trúc dữ liệu: {ve}")
