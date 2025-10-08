@@ -21,7 +21,8 @@ def process_financial_data(df):
     # Đảm bảo các giá trị là số để tính toán
     numeric_cols = ['Năm trước', 'Năm sau']
     for col in numeric_cols:
-        df[col] = pd.to_numeric(col, errors='coerce').fillna(0)
+        # SỬA LỖI: Cần truyền df[col] thay vì col (tên cột) vào pd.to_numeric
+        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
     
     # 1. Tính Tốc độ Tăng trưởng
     # Dùng .replace(0, 1e-9) cho Series Pandas để tránh lỗi chia cho 0
@@ -40,7 +41,6 @@ def process_financial_data(df):
     tong_tai_san_N = tong_tai_san_row['Năm sau'].iloc[0]
 
     # ******************************* PHẦN SỬA LỖI BẮT ĐẦU *******************************
-    # Lỗi xảy ra khi dùng .replace() trên giá trị đơn lẻ (numpy.int64).
     # Sử dụng điều kiện ternary để xử lý giá trị 0 thủ công cho mẫu số.
     
     divisor_N_1 = tong_tai_san_N_1 if tong_tai_san_N_1 != 0 else 1e-9
@@ -227,7 +227,7 @@ if prompt := st.chat_input("Hỏi Gemini bất kỳ câu hỏi nào..."):
         # System instruction cho Chat Bot
         system_instruction_chat = "Bạn là một chuyên gia và trợ lý tài chính AI. Trả lời các câu hỏi về tài chính, kinh tế, hoặc dữ liệu đã được phân tích nếu có. Giữ giọng điệu chuyên nghiệp và thân thiện."
         
-        # Tạo config dictionary để truyền system_instruction (SỬA LỖI KEYWORD ARGUMENT)
+        # Tạo config dictionary để truyền system_instruction (ĐÃ SỬA LỖI KEYWORD ARGUMENT)
         ai_config = {
             "system_instruction": system_instruction_chat
         }
@@ -242,7 +242,7 @@ if prompt := st.chat_input("Hỏi Gemini bất kỳ câu hỏi nào..."):
                 response = client_chat.models.generate_content(
                     model=model_name,
                     contents=contents,
-                    config=ai_config # SỬA: Thay system_instruction=... bằng config=ai_config
+                    config=ai_config # SỬA: Truyền system_instruction thông qua config
                 )
             
             ai_response = response.text
