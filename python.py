@@ -96,9 +96,11 @@ def handle_chat_query(prompt, data_for_ai_context, api_key):
         """
         
         # Chuyển đổi lịch sử st.session_state sang định dạng API
+        # Lấy lịch sử chỉ 5 tin nhắn gần nhất để tránh vượt giới hạn token
+        recent_messages = st.session_state.messages[-5:]
         history_for_api = [
             {"role": msg["role"], "parts": [{"text": msg["content"]}]}
-            for msg in st.session_state.messages
+            for msg in recent_messages
         ]
         
         client = genai.Client(api_key=api_key)
@@ -115,6 +117,7 @@ def handle_chat_query(prompt, data_for_ai_context, api_key):
         
         # Thêm phản hồi của AI vào lịch sử session state
         st.session_state.messages.append({"role": "assistant", "content": ai_response})
+        # **KHÔNG CẦN TRẢ VỀ** vì Session State đã được cập nhật
         return ai_response
 
     except APIError as e:
@@ -261,12 +264,10 @@ if uploaded_file is not None:
                 else:
                     # Gọi hàm xử lý chat
                     with st.spinner('Gemini đang phân tích và trả lời...'):
+                        # Gọi hàm và để Streamlit tự động render lại sau khi session state được cập nhật
                         handle_chat_query(prompt, data_for_ai_context, api_key)
                         
-                        # Hiển thị tin nhắn mới nhất (phản hồi của AI)
-                        # Do handle_chat_query đã thêm tin nhắn vào session state, ta chỉ cần làm mới giao diện
-                        st.rerun()
-
+                        # Không cần gọi st.rerun() ở đây
 
     except ValueError as ve:
         st.error(f"Lỗi cấu trúc dữ liệu: {ve}")
