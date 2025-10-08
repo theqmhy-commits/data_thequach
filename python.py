@@ -9,7 +9,9 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("Ứng dụng Phân Tích Báo Cáo Tài Chính 📊")
+# --- PHẦN ĐÃ CHỈNH SỬA: Đổi màu chữ sang ĐỎ bằng st.markdown và HTML ---
+st.markdown("## Ứng dụng <span style='color:red;'>Phân Tích Báo Cáo Tài Chính</span> 📊", unsafe_allow_html=True)
+# st.title("Ứng dụng Phân Tích Báo Cáo Tài Chính 📊") # Dòng cũ đã được thay thế
 
 # --- Hàm tính toán chính (Sử dụng Caching để Tối ưu hiệu suất) ---
 @st.cache_data
