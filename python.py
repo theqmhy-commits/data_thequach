@@ -226,7 +226,12 @@ if prompt := st.chat_input("Hỏi Gemini bất kỳ câu hỏi nào..."):
         
         # System instruction cho Chat Bot
         system_instruction_chat = "Bạn là một chuyên gia và trợ lý tài chính AI. Trả lời các câu hỏi về tài chính, kinh tế, hoặc dữ liệu đã được phân tích nếu có. Giữ giọng điệu chuyên nghiệp và thân thiện."
-
+        
+        # Tạo config dictionary để truyền system_instruction (SỬA LỖI KEYWORD ARGUMENT)
+        ai_config = {
+            "system_instruction": system_instruction_chat
+        }
+        
         # 3. Gọi API và hiển thị phản hồi
         try:
             client_chat = genai.Client(api_key=api_key_chat)
@@ -237,7 +242,7 @@ if prompt := st.chat_input("Hỏi Gemini bất kỳ câu hỏi nào..."):
                 response = client_chat.models.generate_content(
                     model=model_name,
                     contents=contents,
-                    system_instruction=system_instruction_chat
+                    config=ai_config # SỬA: Thay system_instruction=... bằng config=ai_config
                 )
             
             ai_response = response.text
